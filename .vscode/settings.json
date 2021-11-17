@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "/subscriptions/24ed9202-0838-4326-b177-b806d81a5f21/resourceGroups/appsvc_linux_centralus/providers/Microsoft.Web/sites/cis410-fa21-arevalo-api",
+    "appService.deploySubpath": "."
+}
