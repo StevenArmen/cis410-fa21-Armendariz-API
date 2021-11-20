@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken");
 
 const db = require("./dbConnectExec.js");
 const dbConfig =  require("./config.js")
-const auth = require("./middleware/authenticate")
+const auth = require("./middleware/authenticate.js")
 
 const app = express();
 app.use(express.json());
@@ -32,7 +32,7 @@ app.get("/",(req, res)=>{
 app.post("/customers/logout", auth, (req,res)=>{
   let query = `UPDATE customers
   SET token = NULL
-  WHERE CustomerID = ${req.Customer.CustomerPK}`;
+  WHERE CustomerID = ${req.customer.CustomerID}`;
 
   db.executeQuery(query)
     .then(()=>{res.status(200).send()})
@@ -44,7 +44,7 @@ app.post("/customers/logout", auth, (req,res)=>{
 
 
 app.get("/customers/me",auth,(req,res)=>{
-  res.send(req.Customer)
+  res.send(req.customer)
 })
 
 app.post("/customers/login", async (req, res) => {
@@ -88,7 +88,7 @@ app.post("/customers/login", async (req, res) => {
 
   //4. generate token
 
-  let token = jwt.sign({ pk: user.CustomerID }, dbConfig.JWT, {
+  let token = jwt.sign({ id: user.CustomerID}, dbConfig.JWT, {
     expiresIn: "60 minutes",
   });
   // console.log("token", token);
@@ -105,10 +105,10 @@ app.post("/customers/login", async (req, res) => {
     res.status(200).send({
       token: token,
       user: {
-        firstName: user.LastName,
-        lastName: user.FistName,
+        FirstName: user.LastName,
+        LastName: user.FistName,
         Email: user.Email,
-        CustomerPK: user.CustomerID,
+        CustomerID: user.CustomerID,
       },
     });
   } catch (myError) {
@@ -190,7 +190,64 @@ app.get("/books/:BookID", (req, res) => {
         }
       })
       .catch((err) => {
-        console.log("Error in /movies/:pk", err);
+        console.log("Error in /Books/:id", err);
         res.status(500).send();
       });
     })
+
+    app.post("/checkouts", auth,async (req, res)=>{
+      try{
+        let bookID = req.body.bookID;
+        let checkoutDate = req.body.checkoutDate;
+        let returnDate = req.body.returnDate;
+      
+        if(!bookID || !checkoutDate|| !returnDate || isValidDate(checkoutDate)==false){return res.status(400).send("bad request")};
+      
+        
+      
+        // console.log("summary", summary);
+        // console.log("here is the contact", req.contact);
+      
+        let insertQuery = `INSERT INTO Checkout(BookID, CheckoutDate, ReturnDate, CustomerID)
+        OUTPUT inserted.CheckoutID, inserted.CheckoutDate, inserted.ReturnDate, inserted.BookID
+        VALUES('${bookID}', '${checkoutDate}', '${returnDate}', ${req.customer.CustomerID})`;
+      
+        let insertedReview = await db.executeQuery(insertQuery);
+        // console.log("inserted review", insertedReview);
+        // res.send("here is the repsonse");
+        res.status(201).send(insertedReview[0]);
+      }
+      catch(err){
+        res.status(500).send();
+      }
+      })
+      
+      app.get("/checkouts/me", auth,async (req, res)=>{
+        let query = `SELECT Checkout.CheckoutID, Checkout.CheckoutDate, Checkout.ReturnDate, Book.BookID, Book.Title
+        From Checkout
+        INNER JOIN Customers on Checkout.CustomerID = Customers.CustomerID
+        INNER JOIN Book on Checkout.BookID = Book.BookID
+        WHERE Checkout.CustomerID = ${req.customer.CustomerID}`
+      
+        db.executeQuery(query)
+        
+    .then((theResults)=>{
+      res.status(200).send(theResults)
+  })
+  .catch((myError)=>{
+      res.status(500).send();
+  });
+       
+      })
+      
+      
+
+      function isValidDate(dateString) {
+        var regEx = /^\d{4}-\d{2}-\d{2}$/;
+        if(!dateString.match(regEx)) return false;  // Invalid format
+        var d = new Date(dateString);
+        var dNum = d.getTime();
+        if(!dNum && dNum !== 0) return false; // NaN value, Invalid date
+        return d.toISOString().slice(0,10) === dateString;
+      }
+      

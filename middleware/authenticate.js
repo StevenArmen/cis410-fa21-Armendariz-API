@@ -16,10 +16,10 @@ const auth = async(req,res, next)=>{
         let decoded = jwt.verify(myToken, rockwellConfig.JWT);
         console.log(decoded);
 
-        let customerID = decoded.ID;
+        let customerID = decoded.id;
 
         //2. compare token with database
-        let query = `SELECT CustomerID, NameFirst, NameLast, Email
+        let query = `SELECT CustomerID, FirstName, LastName, Email
         FROM Customers
         WHERE CustomerID=${customerID} and token = '${myToken}'`;
 
@@ -28,7 +28,7 @@ const auth = async(req,res, next)=>{
 
         //3. save user information in the request
         if(returnedUser[0]){
-            req.contact = returnedUser[0];
+            req.customer = returnedUser[0];
             next();
         }
         else{

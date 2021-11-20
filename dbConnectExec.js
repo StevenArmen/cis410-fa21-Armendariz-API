@@ -1,4 +1,3 @@
-
 const sql = require('mssql')
 const sarmenConfig = require("./config.js");
 const config = {
