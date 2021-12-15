@@ -239,6 +239,25 @@ app.get("/books/:BookID", (req, res) => {
   });
        
       })
+      app.get("/checkouts", auth,async (req, res)=>{
+        let query = `SELECT TOP(10) Checkout.CheckoutID, Checkout.CheckoutDate, Checkout.ReturnDate, Book.BookID, Book.Title
+        From Checkout
+        INNER JOIN Customers on Checkout.CustomerID = Customers.CustomerID
+        INNER JOIN Book on Checkout.BookID = Book.BookID
+        `
+      
+        db.executeQuery(query)
+        
+    .then((theResults)=>{
+      res.status(200).send(theResults)
+  })
+  .catch((myError)=>{
+      res.status(500).send();
+  });
+       
+      })
+      
+      
       
       
 
